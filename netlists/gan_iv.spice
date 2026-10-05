@@ -1,0 +1,33 @@
+* I-V characterization of the behavioral GaN HEMT
+* Run from the repository root: ngspice -b netlists/gan_iv.spice
+.include models/gan_hemt_beh.lib
+
+Vd d 0 0.1
+Vg g 0 0
+X1 d g 0 gan_hemt_beh
+
+.control
+set wr_singlescale
+set wr_vecnames
+* 1) transfer curves Id-Vgs at two drain voltages
+foreach vds 0.1 5
+  alter Vd = $vds
+  dc Vg 0 5 0.02
+  let id = -i(Vd)
+  wrdata results/raw/transfer_vds_{$vds}_.dat id
+end
+* 2) output family Id-Vds (first quadrant)
+alter Vd = 0
+foreach vgs 2 3 4 5
+  alter Vg = $vgs
+  dc Vd 0 5 0.02
+  let id = -i(Vd)
+  wrdata results/raw/output_vgs_{$vgs}_.dat id
+end
+* 3) third quadrant (reverse conduction) at Vgs = 0
+alter Vg = 0
+dc Vd -5 0 0.02
+let id = -i(Vd)
+wrdata results/raw/reverse_vgs0.dat id
+.endc
+.end

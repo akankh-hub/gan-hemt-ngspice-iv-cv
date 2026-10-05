@@ -1,0 +1,32 @@
+* C-V characterization (1 MHz small-signal) of the behavioral GaN HEMT
+* Ciss = Cgs+Cgd (drain AC-shorted), Coss = Cds+Cgd (gate AC-shorted), Crss = Cgd
+* Run from the repository root: ngspice -b netlists/gan_cv.spice
+.include models/gan_hemt_beh.lib
+
+Vd d 0 dc 0 ac 0
+Vg g 0 dc 0 ac 0
+X1 d g 0 gan_hemt_beh
+
+.control
+let w = 2*pi*1meg
+shell rm -f results/raw/cv_ciss.csv results/raw/cv_cossrss.csv
+echo "vds,ciss" > results/raw/cv_ciss.csv
+echo "vds,coss,crss" > results/raw/cv_cossrss.csv
+foreach v 0.05 0.1 0.25 0.5 1 1.5 2 3 4 5 7 10 15 20 25 30 40 50 60 70 80 90 100
+  alter Vd dc = $v
+  * drain excited: Coss (current into drain) and Crss (current into grounded gate)
+  alter Vd ac = 1
+  alter Vg ac = 0
+  ac lin 1 1meg 1meg
+  let coss = abs(imag(i(Vd)))/w
+  let crss = abs(imag(i(Vg)))/w
+  echo "$v,$&coss,$&crss" >> results/raw/cv_cossrss.csv
+  * gate excited: Ciss
+  alter Vd ac = 0
+  alter Vg ac = 1
+  ac lin 1 1meg 1meg
+  let ciss = abs(imag(i(Vg)))/w
+  echo "$v,$&ciss" >> results/raw/cv_ciss.csv
+end
+.endc
+.end

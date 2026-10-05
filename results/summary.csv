@@ -1,0 +1,12 @@
+metric,value
+Vth_constant_current_1mA_V,1.326
+Vth_gm_max_extrapolation_V,1.431
+Rdson_Vgs5V_mohm,12.78
+Rdson_Vgs3V_mohm,24.42
+Idsat_Vgs5V_Vds5V_A,160.6
+Vsd_reverse_at_10A_Vgs0_V,2.077
+Ciss_at_50V_pF,703.7
+Coss_at_50V_pF,515.7
+Crss_at_50V_pF,3.741
+Qoss_0_to_50V_nC,44.7
+Eoss_0_to_50V_uJ,0.8472

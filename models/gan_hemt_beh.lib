@@ -1,0 +1,43 @@
+* Behavioral enhancement-mode (p-GaN gate) GaN HEMT model for ngspice
+* Illustrative, simplified model: NOT calibrated to a real device and NOT a
+* production compact model (see README for limitations).
+*
+* Channel : smooth subthreshold-to-strong-inversion gate drive, velocity-
+*           saturation-limited drain current, symmetric (reverse conduction)
+* Charges : Cgs constant; Cgd, Cds voltage dependent via analytic charges
+* Parasitics: series Rg, Rd (access region), Rs
+
+* smooth gate overdrive (softplus), floor avoids divide-by-zero
+.func gtv(vg,vth,nv) {nv*ln(1+exp((vg-vth)/nv))+1e-12}
+
+* drain current for vd >= 0
+.func chan(vg,vd,k,vth,nv,vc) {k*gtv(vg,vth,nv)*vd/sqrt(1+pow(vd*(gtv(vg,vth,nv)+vc)/(gtv(vg,vth,nv)*vc),2))}
+
+* smooth max(v,0): avoids a derivative kink (and wrong small-signal C) at v = 0
+.func sp(v) {0.5*(v+sqrt(v*v+1e-6))}
+
+* charge of a depletion-type capacitance C(v) = c0/(1+v/vj)^m for v >= 0
+.func qjp(v,c0,vj,m) {c0*vj/(1-m)*(pow(1+sp(v)/vj,1-m)-1)}
+
+* same, extended linearly with C = c0 for v < 0
+.func qje(v,c0,vj,m) {qjp(v,c0,vj,m)+c0*(v-sp(v))}
+
+.subckt gan_hemt_beh d g s
++ params: K=30 VTH=1.4 NV=0.039 VC=3 RDRIFT=3m RSRC=0.5m RGATE=0.6
++         CGS=700p CGD0=300p VJG=0.5 MG=0.95 CDS0=3000p VJD=1.5 MD=0.5
+
+RG g gi {RGATE}
+RD d di {RDRIFT}
+RS s si {RSRC}
+
+* channel current (symmetric: swap drain/source roles when vds < 0)
+BCH di si I = V(di,si)>=0 ? chan(V(gi,si),V(di,si),K,VTH,NV,VC) : -chan(V(gi,di),-V(di,si),K,VTH,NV,VC)
+
+* capacitances
+CGSX gi si {CGS}
+CGDX di gi q = qje(V(di,gi),CGD0,VJG,MG)
+CDSX di si q = qjp(V(di,si),CDS0,VJD,MD) - qjp(-V(di,si),CDS0,VJD,MD)
+
+* tiny leakage for numerical stability
+RLK di si 1G
+.ends gan_hemt_beh
